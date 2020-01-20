@@ -1,0 +1,83 @@
+<script>
+    const key = "****************************"
+
+    function calcular_direcciones() {
+        var latitud = document.getElementById('latitud').value
+        var longitud = document.getElementById('longitud').value
+        var url = "https://https//maps.googleapis.com/maps/api/geocode/json?latlng=" + latitud + "," + longitud + "&key=" + key
+        var canton = document.getElementById('canton')
+        var provincia = document.getElementById('provincia')
+        var distrito = document.getElementById('distrito')
+        var direccion = document.getElementById('direccion')
+
+        jQuery.ajax({
+            type: "GET",
+            dataType: "json",
+            url: url,
+            success: function (data) {
+                if (data.results.length) {
+                    canton.value = data.results[0].administrativeLevels.level2long
+                    distrito.value = data.results[0].administrativeLevels.level2short
+                    provincia.value = data.results[0].administrativeLevels.level1long
+
+                } else {
+                    canton.value = "test_canton"
+                    distrito.value = "test_distrito"
+                    provincia.value = "test_provincia"
+                    direccion.value = "test_direccion"
+                }
+            },
+            error: function (err) {
+                canton.value = "test_canton"
+                distrito.value = "test_distrito"
+                provincia.value = "test_provincia"
+                direccion.value = "test_direccion"
+            }
+        });
+    }
+
+</script>
+
+<div class="col-md-4 mx-auto">
+    <div class="card text-center">
+        <div class="card-header">
+            <h3>Nuevo hotel</h3>
+        </div>
+        <div class="card-body">
+            <form action="/hotels/create" method="POST">
+                <div class="form-group">
+                    <input type="text" name="nombre" class="form-control" placeholder="Nombre" required autofocus />
+                </div>
+                <div class="form-group">
+                    <input id="latitud" type="number" name="latitud" onblur="calcular_direcciones();"
+                        class="form-control" placeholder="Latitud" required />
+                </div>
+                <div class="form-group">
+                    <input id="longitud" type="number" name="longitud" onblur="calcular_direcciones();"
+                        class="form-control" placeholder="Longitud" required />
+                </div>
+                <div class="form-group">
+                    <input id="provincia" name="provincia" type="text" name="provincia" class="form-control" placeholder="Provincia"
+                         required  />
+                </div>
+                <div class="form-group">
+                    <input id="canton" type="text" name="canton" class="form-control" placeholder="Cantón" required
+                         />
+                </div>
+                <div class="form-group">
+                    <input id="distrito" type="text" name="distrito" class="form-control" placeholder="Distrito"
+                        required />
+                </div>
+                <div class="form-group">
+                    <input id="direccion" type="text" name="direccion" class="form-control" placeholder="Direccion"
+                         required  />
+                </div>
+                <div class="form-group">
+                    <button class="btn btn-primary btn-block" type="submit">
+                        Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

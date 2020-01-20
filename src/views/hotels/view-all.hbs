@@ -1,0 +1,421 @@
+<style>
+    .checked {
+        color: orange;
+    }
+
+
+    /* Rating Star Widgets Style */
+    .rating-stars ul {
+        list-style-type: none;
+        padding: 0;
+
+        -moz-user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .rating-stars ul>li.star {
+        display: inline-block;
+
+    }
+
+    /* Idle State of the stars */
+    .rating-stars ul>li.star>i.fa {
+        font-size: 1em;
+        /* Change the size of the stars */
+        color: #ccc;
+        /* Color on idle state */
+    }
+
+    /* Hover state of the stars */
+    .rating-stars ul>li.star.hover>i.fa {
+        color: #FFCC36;
+    }
+
+    /* Selected state of the stars */
+    .rating-stars ul>li.star.selected>i.fa {
+        color: #FF912C;
+    }
+</style>
+
+<script>
+    puntuacionLimpieza = 0
+    puntuacionInfraestructura = 0
+    puntuacionHabitaciones = 0
+    puntuacionServicio = 0
+    puntuacionComida = 0
+
+    function resetear() {
+        puntuacionLimpieza = 0
+        puntuacionInfraestructura = 0
+        puntuacionHabitaciones = 0
+        puntuacionServicio = 0
+        puntuacionComida = 0
+    }
+
+    function registrarValoracion(id) {
+        jQuery.ajax({
+            type: "POST",
+            dataType: "json",
+            data: {
+                id: id,
+                puntuacionComida: puntuacionComida,
+                puntuacionLimpieza: puntuacionLimpieza,
+                puntuacionHabitaciones: puntuacionHabitaciones,
+                puntuacionInfraestructura: puntuacionInfraestructura,
+                puntuacionServicio: puntuacionServicio,
+
+            },
+            url: '/hotels/eval',
+            success: function (data) {
+                swal("Gracias", "Tu valoración fue registrada", "success");
+                resetear()
+            },
+            error: function (err) {
+                swal("Oops!", "Un error ha ocurrido", "error");
+                resetear()
+            }
+        });
+    }
+
+    $(document).ready(function () {
+
+        /* 1. Visualizing things on Hover - See next part for action on click */
+        $('#stars li').on('mouseover', function () {
+            var onStar = parseInt($(this).data('value'), 10); // The star currently mouse on
+
+            // Now highlight all the stars that's not after the current hovered star
+            $(this).parent().children('li.star').each(function (e) {
+                if (e < onStar) {
+                    $(this).addClass('hover');
+                }
+                else {
+                    $(this).removeClass('hover');
+                }
+            });
+
+        }).on('mouseout', function () {
+            $(this).parent().children('li.star').each(function (e) {
+                $(this).removeClass('hover');
+            });
+        });
+
+
+        /* 2. Action to perform on click */
+        $('#stars li').on('click', function () {
+            var onStar = parseInt($(this).data('value'), 10); // The star currently selected
+            var nameElement = $(this).parent().attr('name')
+            if (nameElement == 'puntuacionLimpieza') {
+                puntuacionLimpieza = onStar
+            }
+            else if (nameElement == 'puntuacionServicio') {
+                puntuacionServicio = onStar
+            }
+            else if (nameElement == 'puntuacionInfraestructura') {
+                puntuacionInfraestructura = onStar
+            }
+            else if (nameElement == 'puntuacionHabitaciones') {
+                puntuacionHabitaciones = onStar
+            }
+            else if (nameElement == 'puntuacionComida') {
+                puntuacionComida = onStar
+            }
+
+            var stars = $(this).parent().children('li.star');
+
+            for (i = 0; i < stars.length; i++) {
+                $(stars[i]).removeClass('selected');
+            }
+
+            for (i = 0; i < onStar; i++) {
+                $(stars[i]).addClass('selected');
+            }
+
+        });
+
+
+    });
+
+
+    function responseMessage(msg) {
+        $('.success-box').fadeIn(200);
+        $('.success-box div.text-message').html("<span>" + msg + "</span>");
+    }
+</script>
+
+<div class="row">
+
+    {{#each hotels}}
+    {{#if (and (eq ../user.es_admin false) (eq habilitado false))}}
+
+    {{else}}
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title d-flex justify-content-between align-items-center">
+                    {{ nombre }} {{#if (eq ../user.es_admin true)}}
+                    <a href="/hotels/edit/{{_id}}"><i class="fas fa-edit"></i></a>
+                    {{/if}}
+                </h4>
+                <p>{{ provincia }}</p>
+                <p>{{ canton }}</p>
+                <p>{{ distrito }}</p>
+                <p>{{ direccion }}</p>
+
+                <div style="background-color:moccasin;">
+                    <span class="heading">Valoración:</span>
+                    {{#times valoracion}}
+                    <span class="fa fa-star checked"></span>
+                    {{/times}}
+                    {{#times count_vacias}}
+                    <span class="fa fa-star"></span>
+                    {{/times}}
+
+                    {{#if count_valoraciones}}
+                    <p>Basada en {{count_valoraciones}} votos.</p>
+                    {{else}}
+                    <p>No hay valoraciones</p>
+                    {{/if}}
+                </div>
+
+                {{#if (eq ../user.es_admin true)}}
+                {{#if habilitado}}
+                <form action="/hotels/deshabilitar/{{_id}}" method="POST">
+                    <button type="submit" class="btn btn-warning btn-block btn-sm">Deshabilitar</button>
+                </form>
+                {{else}}
+                <form action="/hotels/habilitar/{{_id}}" method="POST">
+                    <button type="submit" class="btn btn-success btn-block btn-sm">Habilitar</button>
+                </form>
+                {{/if}}
+
+
+                <form action="/hotels/eliminar/{{_id}}" method="POST">
+                    <button type="submit" class="btn btn-danger btn-block btn-sm">Eliminar</button>
+                </form>
+                {{else}}
+
+                <button class="btn-warning" data-toggle="modal" href="#modal{{_id}}">Valorar</button>
+
+                <div aria-hidden="true" aria-labelledby="myModalLabel" role="dialog" tabindex="-1" id="modal{{_id}}"
+                    class="modal fade" style="display: none;">
+
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+
+                            <div class="panel panel-info">
+                                <div class="panel-heading">
+                                    <div class="panel-title">Valorar hotel: {{nombre}}</div>
+                                </div>
+
+                                <div style="padding-top:30px" class="panel-body">
+                                    <div style="display:none" id="login-alert" class="alert alert-danger col-sm-12">
+                                    </div>
+
+                                    <div class="form-horizontal">
+
+                                        <div class="input-group">
+                                            <label>Comida:</label>
+                                            <section class='rating-widget'>
+
+                                                <!-- Rating Stars Box -->
+                                                <div class='rating-stars text-center'>
+                                                    <ul id='stars' name='puntuacionComida'>
+                                                        <li class='star' title='Poor' data-value='1'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Fair' data-value='2'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Good' data-value='3'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Excellent' data-value='4'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='WOW!!!' data-value='5'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+
+
+
+
+                                            </section>
+                                        </div>
+
+                                        <div class="input-group">
+                                            <label>Calidad de servicio:</label>
+                                            <section class='rating-widget'>
+
+                                                <!-- Rating Stars Box -->
+                                                <div class='rating-stars text-center'>
+                                                    <ul id='stars' name='puntuacionServicio'>
+                                                        <li class='star' title='Poor' data-value='1'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Fair' data-value='2'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Good' data-value='3'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Excellent' data-value='4'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='WOW!!!' data-value='5'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+
+
+
+
+                                            </section>
+                                        </div>
+
+
+                                        <div class="input-group">
+                                            <label>Habitaciones:</label>
+                                            <section class='rating-widget'>
+
+                                                <!-- Rating Stars Box -->
+                                                <div class='rating-stars text-center'>
+                                                    <ul id='stars' name='puntuacionHabitaciones'>
+                                                        <li class='star' title='Poor' data-value='1'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Fair' data-value='2'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Good' data-value='3'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Excellent' data-value='4'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='WOW!!!' data-value='5'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+
+
+
+
+                                            </section>
+                                        </div>
+
+
+                                        <div class="input-group">
+                                            <label>Infraestructura:</label>
+                                            <section class='rating-widget'>
+
+                                                <!-- Rating Stars Box -->
+                                                <div class='rating-stars text-center'>
+                                                    <ul id='stars' name='puntuacionInfraestructura'>
+                                                        <li class='star' title='Poor' data-value='1'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Fair' data-value='2'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Good' data-value='3'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Excellent' data-value='4'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='WOW!!!' data-value='5'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+
+
+
+
+                                            </section>
+                                        </div>
+
+
+                                        <div class="input-group">
+                                            <label>Limpieza:</label>
+                                            <section class='rating-widget'>
+
+                                                <!-- Rating Stars Box -->
+                                                <div class='rating-stars text-center'>
+                                                    <ul id='stars' name="puntuacionLimpieza">
+                                                        <li class='star' title='Poor' data-value='1'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Fair' data-value='2'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Good' data-value='3'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='Excellent' data-value='4'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                        <li class='star' title='WOW!!!' data-value='5'>
+                                                            <i class='fa fa-star fa-fw'></i>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+
+
+
+
+                                            </section>
+                                        </div>
+
+                                        <div class="col-sm-12 controls">
+                                            <button data-dismiss="modal" name="submit-button"
+                                                onclick="registrarValoracion('{{_id}}')"
+                                                class="btn btn-success btn-block">
+                                                Valorar
+                                            </button>
+
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- /.modal-content -->
+                </div><!-- /.modal-dialog -->
+
+                {{/if}}
+            </div>
+        </div>
+    </div>
+    {{/if}}
+    {{/each}}
+
+    {{#if (eq (length hotels) 0)}}
+    {{#if (eq user.es_admin true)}}
+    <div class="card mx-auto">
+        <div class="card-body">
+            <h1>Hola {{user.nombre}}</h1>
+            <p clsss="lead">No hay hoteles todavía</p>
+            <a href="/hotels/add" class="btn btn-success btn-block">Registra uno</a>
+        </div>
+    </div>
+    {{else}}
+    <div class="card mx-auto">
+        <div class="card-body">
+            <h1>No hay hoteles todavía</h1>
+        </div>
+    </div>
+    {{/if}}
+    {{/if}}
+</div>
